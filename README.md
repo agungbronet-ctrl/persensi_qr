@@ -64,7 +64,7 @@ Lalu buka `.env` dan isi:
 
 - **Validasi di server** untuk semua form: wajib diisi, panjang minimal/maksimal, format email, format tanggal, dan karakter NIS. Jika tidak valid, server menjawab `400` dengan pesan yang jelas.
 - **Perlindungan XSS:** semua data dari pengguna ditampilkan dengan `textContent`, sehingga HTML/skrip yang diketik pengguna tampil sebagai teks biasa dan tidak dijalankan.
-- **Pembatasan percobaan per IP:** login maksimal 10 kali per 15 menit, dan form kontak maksimal 5 pesan per 10 menit.
+- **Pembatasan percobaan per IP:** login maksimal 10 kali per 15 menit, dan form kontak maksimal 5 pesan per 10 menit. Jika server berada di belakang reverse proxy di mesin yang sama (misalnya Caddy), IP pengunjung asli dibaca dari header `X-Forwarded-For`. Header itu **hanya dipercaya jika koneksi datang dari loopback** (`127.0.0.1`/`::1`), sehingga pengunjung yang mengakses langsung tidak bisa memalsukan IP lewat header.
 - Header `X-Content-Type-Options` dan `X-Frame-Options` dipasang, dan sandi disimpan sebagai hash bcrypt.
 
 ## Struktur
@@ -250,4 +250,25 @@ Jika status menunjukkan server berhenti, lihat log. Pesan `[GAGAL START]` berart
 
 Buka **https://\<IP-VM\>** di laptop atau HP, lalu terima peringatan sertifikat. Halaman publik langsung bisa dibuka; guru masuk lewat **Masuk Guru**.
 
-Tanpa HTTPS: jangan buat folder `certs/`, isi `PORT=80` di `.env`, lalu buka **http://\<IP-VM\>**. Kamera HP tidak akan bisa dipakai, tetapi input NIS manual tetap berfungsi.
+### h. (Alternatif) Di belakang Caddy
+
+Jika HTTPS ditangani Caddy di VM yang sama, jangan buat folder `certs/`. Biarkan `PORT=3000` di `.env`, lalu isi `/etc/caddy/Caddyfile`:
+
+```
+https://<IP-VM> {
+    tls internal
+    reverse_proxy 127.0.0.1:3000
+}
+```
+
+```bash
+sudo systemctl reload caddy
+```
+
+- Tulis `127.0.0.1:3000`, bukan `localhost:3000`, karena `localhost` bisa mengarah ke `::1`, sedangkan server hanya mendengarkan IPv4.
+- Jangan buka port 3000 di firewall. Pengunjung cukup lewat Caddy di port 443.
+- Server hanya memercayai `X-Forwarded-For` dari proxy lokal. Jika nanti ada proxy atau load balancer lain di depan Caddy, header dari proxy itu tidak dipercaya, dan batas percobaan akan dihitung per alamat proxy, bukan per pengunjung.
+
+### Tanpa HTTPS
+
+Jangan buat folder `certs/`, isi `PORT=80` di `.env`, lalu buka **http://\<IP-VM\>**. Kamera HP tidak akan bisa dipakai, tetapi input NIS manual tetap berfungsi.

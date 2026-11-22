@@ -178,6 +178,11 @@ function auth(req, res, next) {
 // ---------- App ----------
 const app = express();
 app.disable('x-powered-by');
+// Di belakang reverse proxy (Caddy) di VM yang sama: X-Forwarded-For hanya dipercaya jika
+// koneksi datang dari loopback (127.0.0.1 / ::1). req.ip = alamat paling kanan yang bukan
+// loopback, jadi IP palsu yang dikirim pengunjung tidak bisa dipakai untuk lolos dari batas.
+// Koneksi langsung dari luar tetap memakai alamat socket-nya, header-nya diabaikan.
+app.set('trust proxy', 'loopback');
 app.use((req, res, next) => {
   res.set({
     'X-Content-Type-Options': 'nosniff',
