@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Masuk Guru - MIN 1 Bangka Tengah</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <header></header>
+  <main>
+    <form class="kotak login" id="formLogin">
+      <h2>Masuk Guru</h2>
+      <input name="username" placeholder="Username" required maxlength="50" autocomplete="username">
+      <input name="password" type="password" placeholder="Sandi" required maxlength="200" autocomplete="current-password">
+      <button class="btn" type="submit">Masuk</button>
+      <div class="pesan galat" id="pesan"></div>
+    </form>
+  </main>
+  <script src="/app.js"></script>
+  <script>
+    if (sudahLogin()) location.replace('/scan.html');
+    document.getElementById('formLogin').onsubmit = async (e) => {
+      e.preventDefault();
+      const f = e.target;
+      const { ok, data } = await api('POST', '/api/login', { username: f.username.value, password: f.password.value });
+      if (!ok) return (document.getElementById('pesan').textContent = data.error);
+      localStorage.setItem('token', data.token);
+      location.href = '/scan.html';
+    };
+  </script>
+</body>
+</html>

@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Kontak - MIN 1 Bangka Tengah</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <header></header>
+  <main>
+    <section class="kotak">
+      <h2>Kontak</h2>
+      <table>
+        <tr><th>Alamat</th><td>-</td></tr>
+        <tr><th>Telepon</th><td>-</td></tr>
+        <tr><th>Email</th><td>-</td></tr>
+        <tr><th>Jam layanan</th><td>-</td></tr>
+      </table>
+    </section>
+
+    <section class="kotak">
+      <h2>Kirim Pesan</h2>
+      <form class="kolom" id="formPesan">
+        <label>Nama <input name="nama" required minlength="2" maxlength="100" autocomplete="name"></label>
+        <label>Email <input name="email" type="email" required maxlength="150" autocomplete="email"></label>
+        <label>Pesan <textarea name="pesan" required minlength="5" maxlength="2000"></textarea></label>
+        <button class="btn" type="submit">Kirim</button>
+      </form>
+      <div class="pesan" id="pesan"></div>
+    </section>
+  </main>
+  <script src="/app.js"></script>
+  <script>
+    const form = document.getElementById('formPesan');
+    const info = document.getElementById('pesan');
+    form.onsubmit = async (e) => {
+      e.preventDefault();
+      const tombol = form.querySelector('button');
+      tombol.disabled = true;
+      try {
+        const { ok, data } = await api('POST', '/api/pesan', {
+          nama: form.nama.value, email: form.email.value, pesan: form.pesan.value,
+        });
+        info.className = 'pesan ' + (ok ? 'sukses' : 'galat');
+        info.textContent = ok ? 'Terima kasih, pesan Anda sudah terkirim.' : data.error;
+        if (ok) form.reset();
+      } catch {
+        info.className = 'pesan galat';
+        info.textContent = 'Tidak dapat terhubung ke server.';
+      } finally {
+        tombol.disabled = false;
+      }
+    };
+  </script>
+</body>
+</html>

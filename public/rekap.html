@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Rekap - Absensi QR MIN 1 Bangka Tengah</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body data-halaman="guru">
+  <header></header>
+  <main>
+    <div class="kotak">
+      <h2>Rekap Presensi</h2>
+      <p>Tanggal: <input type="date" id="tanggal"> &nbsp; Jumlah hadir: <b id="jumlah">0</b></p>
+      <div class="tabel-gulir">
+      <table>
+        <thead><tr><th>No</th><th>Nama</th><th>Kelas</th><th>Jam</th></tr></thead>
+        <tbody id="isi"></tbody>
+      </table>
+      </div>
+    </div>
+  </main>
+  <script src="/app.js"></script>
+  <script>
+    const inputTanggal = document.getElementById('tanggal');
+
+    async function muat(tanggal) {
+      const { data: hasil } = await api('GET', '/api/presensi' + (tanggal ? '?tanggal=' + tanggal : ''));
+      inputTanggal.value = hasil.tanggal;
+      document.getElementById('jumlah').textContent = hasil.data.length;
+      const isi = document.getElementById('isi');
+      isi.innerHTML = '';
+      if (hasil.data.length === 0) {
+        const tr = el('tr');
+        const td = el('td', 'Belum ada presensi pada tanggal ini.');
+        td.colSpan = 4;
+        tr.append(td);
+        isi.append(tr);
+      }
+      hasil.data.forEach((r, i) => {
+        const tr = el('tr');
+        tr.append(el('td', i + 1), el('td', r.nama), el('td', r.kelas), el('td', r.jam));
+        isi.append(tr);
+      });
+    }
+
+    inputTanggal.onchange = () => muat(inputTanggal.value);
+    muat(); // tanpa tanggal = hari ini (menurut jam server)
+  </script>
+</body>
+</html>

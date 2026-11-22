@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Pesan Masuk - MIN 1 Bangka Tengah</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body data-halaman="guru">
+  <header></header>
+  <main>
+    <section class="kotak">
+      <h2>Pesan Masuk (<span id="jumlah">0</span>)</h2>
+      <div id="daftar"><p class="redup">Memuat...</p></div>
+    </section>
+  </main>
+  <script src="/app.js"></script>
+  <script>
+    (async () => {
+      const { data } = await api('GET', '/api/pesan');
+      const daftar = document.getElementById('daftar');
+      document.getElementById('jumlah').textContent = data.length;
+      daftar.replaceChildren();
+      if (data.length === 0) daftar.append(el('p', 'Belum ada pesan.', 'redup'));
+      data.forEach((p) => {
+        const item = el('article', undefined, 'item');
+        item.append(
+          el('h3', p.nama),
+          el('div', `${p.email} · ${p.dikirim}`, 'redup'),
+          el('p', p.isi, 'isi-teks')
+        );
+        daftar.append(item);
+      });
+    })();
+  </script>
+</body>
+</html>

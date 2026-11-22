@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Scan - Absensi QR MIN 1 Bangka Tengah</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body data-halaman="guru">
+  <header></header>
+  <main>
+    <div class="kotak">
+      <h2>Scan Kartu QR</h2>
+      <div id="reader"></div>
+      <p class="pesan galat" id="pesanKamera"></p>
+    </div>
+    <div class="hasil" id="hasil"></div>
+    <div class="kotak">
+      <h2>Input NIS Manual</h2>
+      <form class="baris" id="formManual">
+        <input name="nis" placeholder="Ketik NIS" required maxlength="30" inputmode="numeric">
+        <button class="btn" type="submit">Catat</button>
+      </form>
+    </div>
+  </main>
+  <script src="/lib/html5-qrcode.min.js"></script>
+  <script src="/app.js"></script>
+  <script>
+    let sibuk = false;
+    let terakhir = { nis: '', waktu: 0 };
+
+    async function catat(nis) {
+      nis = nis.trim();
+      if (!nis || sibuk) return;
+      // Kamera membaca QR berkali-kali per detik; abaikan NIS yang sama dalam 3 detik
+      if (nis === terakhir.nis && Date.now() - terakhir.waktu < 3000) return;
+      sibuk = true;
+      terakhir = { nis, waktu: Date.now() };
+      const kotak = document.getElementById('hasil');
+      try {
+        const { status, data } = await api('POST', '/api/presensi', { nis });
+        kotak.innerHTML = '';
+        if (status === 201 || status === 409) {
+          kotak.className = 'hasil ' + (status === 201 ? 'hadir' : 'dobel');
+          kotak.append(
+            el('div', data.nama, 'nama'),
+            el('div', `Kelas ${data.kelas} · NIS ${data.nis}`),
+            el('div', `${data.status} (pukul ${data.jam})`)
+          );
+        } else {
+          kotak.className = 'hasil gagal';
+          kotak.append(el('div', data.error || 'Gagal mencatat presensi'));
+        }
+      } catch (e) {
+        kotak.className = 'hasil gagal';
+        kotak.textContent = 'Tidak dapat terhubung ke server';
+      } finally {
+        sibuk = false;
+      }
+    }
+
+    document.getElementById('formManual').onsubmit = (e) => {
+      e.preventDefault();
+      terakhir = { nis: '', waktu: 0 }; // input manual selalu diproses
+      catat(e.target.nis.value);
+      e.target.reset();
+    };
+
+    if (!window.isSecureContext) {
+      document.getElementById('pesanKamera').textContent =
+        'Kamera hanya bisa dipakai lewat HTTPS (atau localhost). Gunakan input NIS manual di bawah.';
+    }
+    new Html5QrcodeScanner('reader', { fps: 10, qrbox: 220 }, false).render((teks) => catat(teks), () => {});
+  </script>
+</body>
+</html>

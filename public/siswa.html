@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Siswa - Absensi QR MIN 1 Bangka Tengah</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body data-halaman="guru">
+  <header></header>
+  <main>
+    <div class="kotak form">
+      <h2>Tambah Siswa</h2>
+      <form class="baris" id="formSiswa">
+        <input name="nis" placeholder="NIS" required maxlength="30" pattern="[0-9A-Za-z\-]+" title="Huruf, angka, atau tanda -">
+        <input name="nama" placeholder="Nama lengkap" required minlength="2" maxlength="100">
+        <input name="kelas" placeholder="Kelas (mis. 4A)" required maxlength="20">
+        <button class="btn" type="submit">Tambah</button>
+      </form>
+      <div class="pesan galat" id="pesan"></div>
+    </div>
+    <div class="kotak">
+      <h2>Kartu QR Siswa (<span id="jumlah">0</span>)</h2>
+      <div class="kartu-grid" id="daftar"></div>
+    </div>
+  </main>
+  <script src="/lib/qrcode.min.js"></script>
+  <script src="/app.js"></script>
+  <script>
+    async function muat() {
+      const { data } = await api('GET', '/api/siswa');
+      const daftar = document.getElementById('daftar');
+      daftar.innerHTML = '';
+      document.getElementById('jumlah').textContent = data.length;
+      data.forEach((s) => {
+        const kartu = el('div', undefined, 'kartu');
+        const canvas = document.createElement('canvas');
+        QRCode.toCanvas(canvas, s.nis, { width: 140, margin: 1 });
+        const hapus = el('button', 'Hapus', 'btn hapus');
+        hapus.onclick = async () => {
+          if (!confirm(`Hapus ${s.nama} (${s.nis})? Riwayat presensinya ikut terhapus.`)) return;
+          await api('DELETE', '/api/siswa/' + encodeURIComponent(s.nis));
+          muat();
+        };
+        kartu.append(canvas, el('div', s.nama, 'nama'), el('div', `NIS ${s.nis} · Kelas ${s.kelas}`, 'kecil'), hapus);
+        daftar.append(kartu);
+      });
+    }
+
+    document.getElementById('formSiswa').onsubmit = async (e) => {
+      e.preventDefault();
+      const f = e.target;
+      const { ok, data } = await api('POST', '/api/siswa', {
+        nis: f.nis.value, nama: f.nama.value, kelas: f.kelas.value,
+      });
+      document.getElementById('pesan').textContent = ok ? '' : data.error;
+      if (ok) { f.reset(); f.nis.focus(); muat(); }
+    };
+
+    muat();
+  </script>
+</body>
+</html>

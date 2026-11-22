@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Informasi - MIN 1 Bangka Tengah</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <header></header>
+  <main>
+    <!-- Form ini hanya tampil untuk guru yang sudah login -->
+    <section class="kotak" id="kelola" hidden>
+      <h2>Tambah Berita</h2>
+      <form class="kolom" id="formBerita">
+        <label>Judul <input name="judul" required minlength="3" maxlength="150"></label>
+        <label>Tanggal <input name="tanggal" type="date" required></label>
+        <label>Isi <textarea name="isi" required minlength="10" maxlength="5000"></textarea></label>
+        <button class="btn" type="submit">Simpan Berita</button>
+      </form>
+      <div class="pesan galat" id="pesan"></div>
+    </section>
+
+    <section class="kotak">
+      <h2>Informasi &amp; Kegiatan</h2>
+      <div id="daftar"><p class="redup">Memuat...</p></div>
+    </section>
+  </main>
+  <script src="/app.js"></script>
+  <script>
+    const guru = sudahLogin();
+
+    async function muat() {
+      const { data } = await api('GET', '/api/berita');
+      const daftar = document.getElementById('daftar');
+      daftar.replaceChildren();
+      if (data.length === 0) daftar.append(el('p', 'Belum ada informasi.', 'redup'));
+      data.forEach((b) => {
+        const item = el('article', undefined, 'item');
+        item.append(el('h3', b.judul), el('div', formatTanggal(b.tanggal), 'redup'), el('p', b.isi, 'isi-teks'));
+        if (guru) {
+          const hapus = el('button', 'Hapus', 'btn hapus');
+          hapus.onclick = async () => {
+            if (!confirm(`Hapus berita "${b.judul}"?`)) return;
+            await api('DELETE', '/api/berita/' + b.id);
+            muat();
+          };
+          item.append(hapus);
+        }
+        daftar.append(item);
+      });
+    }
+
+    if (guru) {
+      const form = document.getElementById('formBerita');
+      document.getElementById('kelola').hidden = false;
+      form.tanggal.valueAsDate = new Date();
+      form.onsubmit = async (e) => {
+        e.preventDefault();
+        const { ok, data } = await api('POST', '/api/berita', {
+          judul: form.judul.value, tanggal: form.tanggal.value, isi: form.isi.value,
+        });
+        document.getElementById('pesan').textContent = ok ? '' : data.error;
+        if (ok) { form.reset(); form.tanggal.valueAsDate = new Date(); muat(); }
+      };
+    }
+
+    muat();
+  </script>
+</body>
+</html>
